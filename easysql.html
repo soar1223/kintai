@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SQL Insert Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="max-w-6xl mx-auto p-6">
+        <div class="bg-white rounded-lg shadow-lg p-8">
+            <h2 class="text-2xl font-medium text-gray-800 mb-8 pb-4 border-b border-gray-200">
+                SQL Insert Generator
+            </h2>
+            
+            <div class="space-y-6">
+                <!-- テーブル名入力 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        テーブル名
+                    </label>
+                    <input type="text" 
+                           id="tableName" 
+                           placeholder="テーブル名を入力" 
+                           class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-400 focus:border-gray-400 outline-none transition"
+                    >
+                </div>
+
+                <!-- カラム定義 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        カラム定義
+                    </label>
+                    <div id="columnInputs" class="space-y-2">
+                        <div class="flex items-center gap-4">
+                            <input type="text" 
+                                   placeholder="カラム名" 
+                                   class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-400 focus:border-gray-400 outline-none transition"
+                            >
+                            <select class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-400 focus:border-gray-400 outline-none bg-white">
+                                <option value="string">文字列</option>
+                                <option value="number">数値</option>
+                                <option value="datetime">日時</option>
+                            </select>
+                            <button onclick="removeColumn(this)" 
+                                    class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition">
+                                削除
+                            </button>
+                        </div>
+                    </div>
+                    <button onclick="addColumn()" 
+                            class="mt-4 px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-900 transition">
+                        カラムを追加
+                    </button>
+                </div>
+
+                <!-- 行の操作ボタン -->
+                <div class="flex gap-4">
+                    <button onclick="addValueRow()" 
+                            class="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-900 transition">
+                        行を追加
+                    </button>
+                    <button onclick="removeLastValueRow()" 
+                            class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition">
+                        最後の行を削除
+                    </button>
+                </div>
+
+                <!-- 値入力テーブル -->
+                <div class="overflow-x-auto rounded-lg border border-gray-200">
+                    <table id="valueTable" class="w-full">
+                        <thead>
+                            <tr id="headerRow" class="bg-gray-50">
+                                <th class="w-16 px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">No.</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 生成ボタン -->
+                <div>
+                    <button onclick="generateInsert()" 
+                            class="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-900 transition">
+                        INSERT文を生成
+                    </button>
+                </div>
+
+                <!-- 結果表示 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        生成されたINSERT文
+                    </label>
+                    <textarea id="result" 
+                              readonly 
+                              class="w-full h-48 p-4 font-mono text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-400 focus:border-gray-400 outline-none bg-gray-50"
+                    ></textarea>
+                    <button onclick="copyToClipboard()" 
+                            class="mt-2 px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-black transition">
+                        コピー
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateValueTable() {
+            const headerRow = document.getElementById('headerRow');
+            headerRow.innerHTML = '<th class="w-16 px-4 py-3 text-left text-sm font-medium text-gray-700 border-b">No.</th>';
+            
+            document.querySelectorAll('#columnInputs > div').forEach(row => {
+                const columnName = row.querySelector('input').value;
+                if (columnName) {
+                    const th = document.createElement('th');
+                    th.className = 'px-4 py-3 text-left text-sm font-medium text-gray-700 border-b';
+                    th.textContent = columnName;
+                    headerRow.appendChild(th);
+                }
+            });
+
+            const tbody = document.querySelector('#valueTable tbody');
+            const rows = tbody.querySelectorAll('tr');
+            rows.forEach((row, index) => {
+                updateValueRow(row, index + 1);
+            });
+        }
+
+        function updateValueRow(row, rowNumber) {
+            row.innerHTML = `<td class="px-4 py-2 text-sm text-gray-500 border-b">${rowNumber}</td>`;
+            
+            document.querySelectorAll('#columnInputs > div').forEach(() => {
+                const td = document.createElement('td');
+                td.className = 'px-4 py-2 border-b';
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'w-full p-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-gray-400 focus:border-gray-400 outline-none';
+                td.appendChild(input);
+                row.appendChild(td);
+            });
+        }
+
+        function addValueRow() {
+            const tbody = document.querySelector('#valueTable tbody');
+            const newRow = document.createElement('tr');
+            const rowNumber = tbody.children.length + 1;
+            updateValueRow(newRow, rowNumber);
+            tbody.appendChild(newRow);
+        }
+
+        function removeLastValueRow() {
+            const tbody = document.querySelector('#valueTable tbody');
+            if (tbody.children.length > 0) {
+                tbody.removeChild(tbody.lastChild);
+            }
+        }
+
+        function addColumn() {
+            const columnInputs = document.getElementById('columnInputs');
+            const newRow = document.createElement('div');
+            newRow.className = 'flex items-center gap-4';
+            newRow.innerHTML = `
+                <input type="text" 
+                       placeholder="カラム名" 
+                       class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-400 focus:border-gray-400 outline-none transition">
+                <select class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-400 focus:border-gray-400 outline-none bg-white">
+                    <option value="string">文字列</option>
+                    <option value="number">数値</option>
+                    <option value="datetime">日時</option>
+                </select>
+                <button onclick="removeColumn(this)" 
+                        class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition">
+                    削除
+                </button>
+            `;
+            columnInputs.appendChild(newRow);
+            updateValueTable();
+        }
+
+        function removeColumn(button) {
+            button.parentElement.remove();
+            updateValueTable();
+        }
+
+        function formatValue(value, type) {
+            if (value === '') return 'NULL';
+            switch(type) {
+                case 'string':
+                case 'datetime':
+                    return `'${value.replace(/'/g, "''")}'`;
+                case 'number':
+                    return value.trim() === '' ? 'NULL' : value;
+                default:
+                    return value;
+            }
+        }
+
+        function generateInsert() {
+            const tableName = document.getElementById('tableName').value;
+            const columns = [];
+            const columnTypes = [];
+            
+            document.querySelectorAll('#columnInputs > div').forEach(row => {
+                const columnName = row.querySelector('input').value;
+                const columnType = row.querySelector('select').value;
+                if (columnName) {
+                    columns.push(columnName);
+                    columnTypes.push(columnType);
+                }
+            });
+
+            if (!tableName || columns.length === 0) {
+                alert('テーブル名とカラムを入力してください。');
+                return;
+            }
+
+            let sql = `INSERT INTO ${tableName} (${columns.join(', ')})\nVALUES\n`;
+            const values = [];
+
+            document.querySelectorAll('#valueTable tbody tr').forEach(row => {
+                const rowValues = Array.from(row.querySelectorAll('input')).map(
+                    (input, index) => formatValue(input.value, columnTypes[index])
+                );
+                values.push(`(${rowValues.join(', ')})`);
+            });
+
+            sql += values.join(',\n') + ';';
+            document.getElementById('result').value = sql;
+        }
+
+        function copyToClipboard() {
+            const textarea = document.getElementById('result');
+            textarea.select();
+            document.execCommand('copy');
+            alert('コピーしました！');
+        }
+
+        addValueRow();
+    </script>
+</body>
+</html>
