@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>麻雀スコア計算ツール</title>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  
+  <!-- Material Icons CDN -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  
+  <style>
+    /* 基本スタイル */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Roboto', sans-serif;
+      background-color: #f0f2f5;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: auto;
+    }
+    
+    .wrap {
+      background-color: #ffffff;
+      border-radius: 10px;
+      max-width: 900px;
+      width: 90%;
+      padding: 30px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #000033; /* さらに暗いネイビー */
+      font-size: 2rem;
+    }
+    
+    /* Material Icons 用のスタイル（必要に応じてサイズ調整） */
+    .material-icons {
+      vertical-align: middle;
+      font-size: 1.5rem;
+      margin-right: 5px;
+    }
+    
+    .description {
+      background-color: #e9ecef;
+      border-left: 5px solid #000033;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 25px;
+      font-size: 0.95rem;
+      text-align: center;
+    }
+    
+    /* プレイヤー情報テーブル（名前列なし） */
+    #playerTable {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 25px;
+    }
+    
+    #playerTable th, #playerTable td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+    
+    #playerTable th {
+      background-color: #000033;
+      color: #ffffff;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    
+    #playerTable input[type="number"],
+    #playerTable input[type="text"] {
+      width: 90%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+    
+    #playerTable input[type="number"]:focus,
+    #playerTable input[type="text"]:focus {
+      border-color: #000033;
+      outline: none;
+    }
+    
+    /* ウマ・原点設定 */
+    .settings {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 25px;
+      justify-content: center;
+    }
+    
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      min-width: 180px;
+      width: 100%;
+    }
+    
+    .form-group label {
+      font-weight: 700;
+      margin-bottom: 5px;
+      color: #000033;
+      font-size: 1rem;
+    }
+    
+    .form-group select {
+      padding: 10px 12px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+    
+    .form-group select:focus {
+      border-color: #000033;
+      outline: none;
+    }
+    
+    /* 結果表示テーブル */
+    #resultTable {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 25px;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    
+    #resultTable thead {
+      background-color: #000033;
+      color: #ffffff;
+    }
+    
+    #resultTable th, #resultTable td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+    
+    #resultTable th {
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.95rem;
+    }
+    
+    /* 結果表示ボックス */
+    input[type="text"].result {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+      text-align: center;
+      background-color: #f9f9f9;
+    }
+    
+    input[type="text"].result:focus {
+      border-color: #000033;
+      background-color: #fff;
+      outline: none;
+    }
+    
+    /* ボタンスタイル */
+    .button-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    button {
+      background-color: #000033;
+      color: #ffffff;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin: 0 5px;
+      display: inline-block;
+      align-items: center;
+    }
+    
+    button:hover {
+      background-color: #333399;
+    }
+    
+    /* 履歴セクションは削除 */
+    
+    /* レスポンシブデザイン */
+    @media (max-width: 600px) {
+      .settings {
+        flex-direction: column;
+      }
+      
+      #playerTable th, #playerTable td,
+      #resultTable th, #resultTable td {
+        font-size: 0.9rem;
+        padding: 10px;
+      }
+      
+      button {
+        width: 100%;
+        margin: 10px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="wrap">
+    <h1><span class="material-icons">casino</span> 麻雀スコア計算ツール</h1>
+    <div class="description">
+      <p>
+        以下の「プレイヤー情報」テーブルに各プレイヤーのスコアを入力してください。<br>
+        1着のスコアは、2着～4着のスコアから自動計算されます。<br>
+        次に、ウマと原点を設定して「結果を表示」ボタンをクリックすると、各プレイヤーのスコアが計算されます。
+      </p>
+    </div>
+    
+    <!-- プレイヤー情報テーブル（名前入力なし、スコアのみ） -->
+    <h2>プレイヤー情報</h2>
+    <table id="playerTable">
+      <thead>
+        <tr>
+          <th>着順</th>
+          <th>スコア</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1着</td>
+          <td><input id="score1" type="text" class="result" readonly></td>
+        </tr>
+        <tr>
+          <td>2着</td>
+          <td><input id="score2" type="number" placeholder="例：25000"></td>
+        </tr>
+        <tr>
+          <td>3着</td>
+          <td><input id="score3" type="number" placeholder="例：21000"></td>
+        </tr>
+        <tr>
+          <td>4着</td>
+          <td><input id="score4" type="number" placeholder="例：16000"></td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <!-- ウマ・原点設定 -->
+    <div class="settings">
+      <div class="form-group">
+        <label for="umaSelect">ウマ</label>
+        <select id="umaSelect">
+          <option value="1">5-10</option>
+          <option value="2">10-20</option>
+          <option value="3">10-30</option>
+          <option value="4">20-30</option>
+          <option value="5">20-40</option>
+          <option value="6">30-50</option>
+          <option value="7">40-60</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="gentenSelect">原点</label>
+        <select id="gentenSelect">
+          <option value="1">30,000点</option>
+          <option value="2">25,000点</option>
+        </select>
+      </div>
+    </div>
+    
+    <!-- 結果表示テーブル -->
+    <h2>計算結果</h2>
+    <table id="resultTable">
+      <thead>
+        <tr>
+          <th>1着</th>
+          <th>2着</th>
+          <th>3着</th>
+          <th>4着</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><input id="score1Result" type="text" class="result" readonly></td>
+          <td><input id="score2Result" type="text" class="result" readonly></td>
+          <td><input id="score3Result" type="text" class="result" readonly></td>
+          <td><input id="score4Result" type="text" class="result" readonly></td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <div class="button-container">
+      <button type="button" onclick="calculateMahjongScores()">
+        <span class="material-icons">calculate</span> 結果を表示
+      </button>
+    </div>
+  </div>
+  
+  <script>
+    // 値を「+10」「-5」「±0」形式で文字列化する関数
+    function formatScore(value) {
+      if (value > 0) {
+        return "+" + value;
+      } else if (value < 0) {
+        return value.toString();
+      } else {
+        return "±0";
+      }
+    }
+    
+    function calculateMahjongScores() {
+      // プレイヤー2～4のスコア取得（未入力の場合は0）
+      let score2 = parseFloat(document.getElementById("score2").value) || 0;
+      let score3 = parseFloat(document.getElementById("score3").value) || 0;
+      let score4 = parseFloat(document.getElementById("score4").value) || 0;
+      
+      // セレクトボックスからウマ・原点の値を取得
+      let selectedUma = document.getElementById("umaSelect").value;
+      let selectedGenten = document.getElementById("gentenSelect").value;
+      
+      // 原点の設定
+      if (selectedGenten === "1") {
+        selectedGenten = 30000;
+      } else {
+        selectedGenten = 25000;
+      }
+      
+      // ウマ計算（2着～4着のスコア調整）
+      switch (selectedUma) {
+        case "1": // 5-10
+          score2 = score2 - selectedGenten + 5000;
+          score3 = score3 - selectedGenten - 5000;
+          score4 = score4 - selectedGenten - 10000;
+          break;
+        case "2": // 10-20
+          score2 = score2 - selectedGenten + 10000;
+          score3 = score3 - selectedGenten - 10000;
+          score4 = score4 - selectedGenten - 20000;
+          break;
+        case "3": // 10-30
+          score2 = score2 - selectedGenten + 10000;
+          score3 = score3 - selectedGenten - 10000;
+          score4 = score4 - selectedGenten - 30000;
+          break;
+        case "4": // 20-30
+          score2 = score2 - selectedGenten + 20000;
+          score3 = score3 - selectedGenten - 20000;
+          score4 = score4 - selectedGenten - 30000;
+          break;
+        case "5": // 20-40
+          score2 = score2 - selectedGenten + 20000;
+          score3 = score3 - selectedGenten - 20000;
+          score4 = score4 - selectedGenten - 40000;
+          break;
+        case "6": // 30-50
+          score2 = score2 - selectedGenten + 30000;
+          score3 = score3 - selectedGenten - 30000;
+          score4 = score4 - selectedGenten - 50000;
+          break;
+        case "7": // 40-60
+          score2 = score2 - selectedGenten + 40000;
+          score3 = score3 - selectedGenten - 40000;
+          score4 = score4 - selectedGenten - 60000;
+          break;
+        default:
+          break;
+      }
+      
+      // プレイヤー1のスコアは、2着～4着の調整後の合計の負数
+      let score1 = -(score2 + score3 + score4);
+      
+      // 結果表示
+      document.getElementById("score1Result").value = formatScore(score1);
+      document.getElementById("score2Result").value = formatScore(score2);
+      document.getElementById("score3Result").value = formatScore(score3);
+      document.getElementById("score4Result").value = formatScore(score4);
+    }
+  </script>
+</body>
+</html>
